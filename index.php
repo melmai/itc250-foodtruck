@@ -1,4 +1,14 @@
 <?php
+/**
+ * index.php 
+ * 
+ * @package Bob's Burgers Order Form
+ * @author Melissa Wong <mellymai@gmail.com>
+ * @version 0.1 2017/07/17
+ * @link http://mel.codes/
+ * @license http://www.apache.org/licenses/LICENSE-2.0
+ * @todo none
+ */
 
 include 'header.php';
 
@@ -17,32 +27,36 @@ if (isset($_POST["Submit"])) { //show data if values set
     $ExtrasBurger3 = $_POST['ExtrasBurger3'];
 
     //create objects and use loop to add extras if they exist
-    $burger = new Item($QuantityBurger1, 'Poutine on the Ritz Burger', '(topped with poutine and side of Ritz crackers)', 10.99);
-    if(COUNT($_POST['ExtrasBurger1']) > 0) { 
-        foreach($ExtrasBurger1 as $ExtraBurger1) {
-            $burger->addExtra($ExtraBurger1);
+    if($QuantityBurger1 > 0) {
+       $burger = new Item($QuantityBurger1, 'Poutine on the Ritz Burger', '(topped with poutine and side of Ritz crackers)', 10.99);
+        if(COUNT($_POST['ExtrasBurger1']) > 0) { 
+            foreach($ExtrasBurger1 as $ExtraBurger1) {
+                $burger->addExtra($ExtraBurger1);
+            }
         }
+            $items[] = $burger;
     }
-    $items[] = $burger;
 
-    $burger = new Item($QuantityBurger2, 'Gourdon Hamsey Burger', '(comes with squash and ham)', 10.99);
-    if(COUNT($_POST['ExtrasBurger2']) > 0) {
-        foreach($ExtrasBurger2 as $ExtraBurger2) {
-            $burger->addExtra($ExtraBurger2);
-        }
+    if($QuantityBurger2 > 0) {
+        $burger = new Item($QuantityBurger2, 'Gourdon Hamsey Burger', '(comes with squash and ham)', 10.99);
+        if(COUNT($_POST['ExtrasBurger2']) > 0) {
+            foreach($ExtrasBurger2 as $ExtraBurger2) {
+                $burger->addExtra($ExtraBurger2);
+            }
+        } 
+        $items[] = $burger;
     }
-    $items[] = $burger;
-
-    $burger = new Item($QuantityBurger3, 'Say It Ain\'t Cilantro Burger', '(comes with cilantro)', 11.99);
-    if(COUNT($_POST['ExtrasBurger3']) > 0) {
-        foreach($ExtrasBurger3 as $ExtraBurger3) {
-            $burger->addExtra($ExtraBurger3);
-        }
-    }
-    $items[] = $burger;
-
     
-    
+    if($QuantityBurger3 > 0) {
+        $burger = new Item($QuantityBurger3, 'Say It Ain\'t Cilantro Burger', '(comes with cilantro)', 11.99);
+        if(COUNT($_POST['ExtrasBurger3']) > 0) {
+            foreach($ExtrasBurger3 as $ExtraBurger3) {
+                $burger->addExtra($ExtraBurger3);
+            }
+        }
+        $items[] = $burger;
+    }
+
     //create beginning of table
     echo '
         <table>
@@ -62,13 +76,14 @@ if (isset($_POST["Submit"])) { //show data if values set
     $itemsCost = 0;
 
     //use loop to create middle section of table
-    foreach($items as $item) {
-        //add calculation values
-        $extrasCount += count($item->Extras);
-        $extrasCost += $item->calcExtras();
-        $itemsCost += $item->Price * $item->Quantity;
+    if(COUNT($items) > 0) {
+        foreach($items as $item) {
+            //add calculation values
+            $extrasCount += count($item->Extras);
+            $extrasCost += $item->calcExtras();
+            $itemsCost += $item->Price * $item->Quantity;
 
-        echo "
+            echo "
                 <tr>
                     <td class='center'>$item->Quantity</td>
                     <td>
@@ -80,6 +95,15 @@ if (isset($_POST["Submit"])) { //show data if values set
                         \${$item->calcItem($item->Quantity, $item->Price)}<br />
                         + {$item->calcExtras()}
                     </td>
+                </tr>
+            ";
+        }       
+    } else {
+        echo "
+                <tr>
+                    <td></td>
+                    <td class='center'><h2>No Items Ordered!</h2></td>
+                    <td></td>
                 </tr>
         ";
     }
@@ -114,7 +138,6 @@ if (isset($_POST["Submit"])) { //show data if values set
         echo '<img src="error.svg" id="feedback">';
     }
 
-    
 } else { //show form
 
     echo '
