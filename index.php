@@ -1,248 +1,205 @@
 <?php
 /**
- * index.php 
- * 
- * @package Bob's Burgers Order Form
+ *
+ * @package ITC250
  * @author Melissa Wong <mellymai@gmail.com>
- * @version 0.1 2017/07/17
  * @link http://mel.codes/
- * @license http://www.apache.org/licenses/LICENSE-2.0
+ * @author Ron Nims <rleenims@gmail.com>
+ * @link http://www.artdevsign.com/
+ * @version 0.1 2017/07/22
+ * @license http://opensource.org/licenses/osl-3.0.php Open Software License ("OSL") v. 3.0
  * @todo none
  */
 
-include 'header.php';
+include 'items.php'; 
 
 define('THIS_PAGE', basename($_SERVER['PHP_SELF']));
+define("SALESTAX", 0.1);
+$subtotal = 0;
 
-if (isset($_POST["Submit"])) { //show data if values set
+include 'header.php';
 
-    //set vars for form data
-    $QuantityBurger1 = $_POST['QuantityBurger1'];
-    $ExtrasBurger1 = $_POST['ExtrasBurger1'];
+if(isset($_POST["Submit"])) {
+    showData($config->items, $config->extras);
+} else {
+    showForm($config->items, $config->extras);
+}
 
-    $QuantityBurger2 = $_POST['QuantityBurger2'];
-    $ExtrasBurger2 = $_POST['ExtrasBurger2'];
+include 'footer.php';
 
-    $QuantityBurger3 = $_POST['QuantityBurger3'];
-    $ExtrasBurger3 = $_POST['ExtrasBurger3'];
-
-    //create objects and use loop to add extras if they exist
-    if($QuantityBurger1 > 0) {
-       $burger = new Item($QuantityBurger1, 'Poutine on the Ritz Burger', '(topped with poutine and side of Ritz crackers)', 10.99);
-        if(count($_POST['ExtrasBurger1']) > 0) { 
-            foreach($ExtrasBurger1 as $ExtraBurger1) {
-                $burger->addExtra($ExtraBurger1);
-            }
-        }
-            $items[] = $burger;
-    }
-
-    if($QuantityBurger2 > 0) {
-        $burger = new Item($QuantityBurger2, 'Gourdon Hamsey Burger', '(comes with squash and ham)', 10.99);
-        if(count($_POST['ExtrasBurger2']) > 0) {
-            foreach($ExtrasBurger2 as $ExtraBurger2) {
-                $burger->addExtra($ExtraBurger2);
-            }
-        } 
-        $items[] = $burger;
+/* function writeItem
+ * echo  html table row for one order item
+ * @param object $item - item to write
+ * @param int $itemQty - quantity of this item
+ * @param float $extrasAmt - total of extras prices 
+ * @param string $itemExtras - csv list of extras
+ */
+function writeItem($item, $itemQty, $extrasAmt, $itemExtras) {
+    // trim trailing comma on extras list if exists
+    $itemExtras = trim($itemExtras);
+    if ($itemExtras[strlen($itemExtras) - 1] == ',' ) {
+        $itemExtras = substr($itemExtras, 0, strlen($itemExtras) - 1);
     }
     
-    if($QuantityBurger3 > 0) {
-        $burger = new Item($QuantityBurger3, 'Say It Ain\'t Cilantro Burger', '(comes with cilantro)', 11.99);
-        if(count($_POST['ExtrasBurger3']) > 0) {
-            foreach($ExtrasBurger3 as $ExtraBurger3) {
-                $burger->addExtra($ExtraBurger3);
-            }
+    if ($itemQty > 0) {
+        $itemTotal = ($item->Price + $extrasAmt) * $itemQty;
+
+        echo '<tr><td class="center"><b>' . $itemQty . '</b></td>';
+        echo '<td><b>' . $item->Name;
+        if ($itemQty > 1) {
+            echo 's';
         }
-        $items[] = $burger;
+        echo '</b><br/>';
+        if (strlen($itemExtras) > 0) {
+            echo 'With: ' . $itemExtras . '</td>';
+        }else{
+            echo 'Straight up!</td>';
+        }
+        echo '<td class="right">$' . sprintf("%01.2f", $itemTotal) . '</td></tr>';
+
+        return $itemTotal;
+    }else{
+        return 0;
     }
+}
 
-    //create beginning of table
-    echo '
-        <table>
-            <thead>
-                <tr>
-                    <th>Qty</td>
-                    <th>Items</td>
-                    <th>Price</td>
-                </tr>
-            </thead>
-            <tbody>
-    ';
+/* function showForm
+ * write the menu order form page
+ * @param array $items
+ * @param array $extras
+ */
+function showForm($items, $extras)
+{# shows form for order entry
+	
+	echo '        <div id="logo">
+            <img src="logo.png">
+            <h1>Order Form</h1>
+        </div>
+        <form action="" method="post">';
+  
+        // Process menu items for form
+		foreach($items as $item) {
+            // write main item input info
+            echo '<div class="item"><p class="item"><b>Qty <input type="number" min="0" max="99" maxlength="2" value="0" name="item_' . $item->ID . '" /> ' . $item->Name . ' ~ $' . sprintf("%01.2f",$item->Price) . ' </b></p>';
+            echo '<p>' . $item->Description . '</p>';
+            
+            // write related extras input info
+            echo '<section class="extra-flex">';
+            foreach($item->Extras as $extraID) {
+                echo '<div class="extra-item" title="' . $extras[$extraID]->Description .
+                    '"><label><input type="checkbox" name="item_' . $item->ID . '_' .
+                $extraID . '" > ' . $extras[$extraID]->Name . ' <b>+ $' .
+                sprintf("%01.2f",$extras[$extraID]->Price) . '</b></label></div>';     
+            }
+            echo '</section>';
 
-    //initialize vars for calculations
-    $extrasCount = 0;
-    $extrasCost = 0;
-    $itemsCost = 0;
-
-    //use loop to create middle section of table
-    if(count($items) > 0) {
-        foreach($items as $item) {
-            //add calculation values
-            $extrasCount += count($item->Extras);
-            $extrasCost += $item->calcExtras();
-            $itemsCost += $item->Price * $item->Quantity;
-
-            echo "
-                <tr>
-                    <td class='center'>$item->Quantity</td>
-                    <td>
-                        $item->Name<br />
-                        $item->Description<br />
-                        Extras: {$item->showExtras()}
-                    </td>
-                    <td>
-                        \${$item->calcItem($item->Quantity, $item->Price)}<br />
-                        + {$item->calcExtras()}
-                    </td>
-                </tr>
-            ";
+            echo '</div>';
         }       
-    } else {
-        echo "
-                <tr>
-                    <td></td>
-                    <td class='center'><h2>No Items Ordered!</h2></td>
-                    <td></td>
-                </tr>
-        ";
+        
+        echo '<input type="submit" name="Submit" value="Place Order"/>
+            </form>
+            ';
+}
+
+/* function showData
+ * write the receipt page
+ * order information passed in $_POST
+ * @param array $extras
+ */
+function showData($items, $extras)
+{#form submits here we show entered name
+	global $subtotal;
+    // Process menu items for form
+    
+    //DEBUG echo '<pre>';
+    //DEBUG var_dump($_POST);
+    //DEBUG echo '</pre>';
+    //DEBUG die;
+    
+    // get_header(); #defaults to footer_inc.php
+        
+    //table header
+    echo '        <table>
+        <thead>
+            <tr>
+                <th>Qty</td>
+                <th>Items</td>
+                <th>Price</td>
+            </tr>
+        </thead>
+        <tbody>';
+
+    $itemQty = $value;
+    $itemExtras = "";
+    $extrasTotal = 0;
+
+    // set currentItem high so first pass doesnt write anything
+    $currentItem = 1000;
+    
+	foreach($_POST as $name => $value) {
+        //loop the form elements
+         
+        //if form name attribute starts with 'item_', process it
+        if(substr($name,0,5)=='item_') {
+            
+            //explode the string into an array on the "_"
+            $name_array = explode('_',$name);
+            
+            //forcibly cast to an int in the process
+            $id = (int)$name_array[1];
+
+            if ($id > $currentItem) {
+                //new item so write data for currentItem
+                $subtotal += writeItem($items[$currentItem], $itemQty, $extrasTotal, $itemExtras);
+             }
+            
+            // if item is not extra
+            if ( count($name_array) < 3) {
+                //initialize new currentItem info
+                $currentItem = $id;
+                $itemQty = intval($value);
+                $itemExtras = "";
+                $extrasTotal = 0.0;
+            } else {
+            // item is extra
+                $extraID = (int)$name_array[2];
+                $itemExtras .= $extras[$extraID]->Name . ', ';
+                $extrasTotal += $extras[$extraID]->Price;
+            };
+        }
     }
 
-    //create variables and calculate tax and totals
-    $subtotal = number_format(($extrasCost + $itemsCost), 2);
-    $tax = number_format(.10100 * $subtotal, 2);
-    $total = number_format(($subtotal + $tax), 2);
+    // write last item
+    $subtotal += writeItem($items[$currentItem], $itemQty, $extrasTotal, $itemExtras);
+    
+    // write totals & tax
+    echo '<tr><td></td><td class="right">Subtotal<br/>Sales Tax<br/><b>Order Total</b></td><td class="right">$' . 
+        sprintf("%01.2f", $subtotal) . '<br/>$' . sprintf("%01.2f", $subtotal * SALESTAX) . '<br/><b>$' . 
+        sprintf("%01.2f", $subtotal + ($subtotal * SALESTAX)) . '</b></td></tr>';
 
-    //create end of table
-    echo "
-                <tr>
-                    <td></td>
-                    <td class='right'>
-                        Subtotal <br />
-                        Tax <br />
-                        Total <br />
-                    </td>
-                    <td>
-                        \$$subtotal <br />
-                        + $tax <br />
-                        \$$total <br />
-                    </td>
-                </tr>
-            </tbody>
+    // write link back to form
+    echo '<tr><td></td><td class="center">';
+    if($subtotal > 0) { //show confirmation if values submitted
+        $returnText = 'Place another Order';
+    }else{
+        $returnText = 'Please Try Again!';
+    }
+    echo '<a href="'. THIS_PAGE . '"><button type="button">'. $returnText . '</button></a>';       
+    
+    echo '</td><td></td></tr>';
+    
+    //table footer
+    echo '            </tbody>
         </table>
-    ";
-
-    if($total > 0) { //show confirmation if values submitted
+        ';
+    
+    if($subtotal > 0) { //show confirmation if values submitted
         echo '<img src="confirm.svg" id="feedback">';
     } else { //show error msg if no values submitted
         echo '<img src="error.svg" id="feedback">';
     }
-
-} else { //show form
-
-    echo '
-        <div id="logo">
-            <img src="logo.png">
-            <h1>Order Form</h1>
-        </div>
-
-        <form action="' . THIS_PAGE . '" method="post">
-            <p class="item"><select name="QuantityBurger1">
-                <option value="0">0</option>
-                <option value="1">1</option>
-                <option value="2">2</option>
-                <option value="3">3</option>
-                <option value="4">4</option>
-            </select>
-           Poutine on the Ritz Burger</p>
-           <p class="desc">(topped with poutine and side of Ritz crackers)</p>
-            <label>
-                Extras (+$0.25/ea):<br />
-                <input type="checkbox" name="ExtrasBurger1[]" value="Bacon" /> Bacon<br />
-                <input type="checkbox" name="ExtrasBurger1[]" value="Onions" /> Onions<br />
-                <input type="checkbox" name="ExtrasBurger1[]" value="Avocado" /> Avocado<br />
-            </label>            
-
-            <p class="item"><select name="QuantityBurger2">
-                <option value="0">0</option>
-                <option value="1">1</option>
-                <option value="2">2</option>
-                <option value="3">3</option>
-                <option value="4">4</option>
-            </select>
-           Gourdon Hamsey Burger</p>
-           <p class="desc">(comes with squash and ham)</p>
-            <label>
-                Extras (+$0.25/ea):<br />
-                <input type="checkbox" name="ExtrasBurger2[]" value="Bacon" /> Bacon<br />
-                <input type="checkbox" name="ExtrasBurger2[]" value="Onions" /> Onions<br />
-                <input type="checkbox" name="ExtrasBurger2[]" value="Avocado" /> Avocado<br />
-            </label>            
-
-            <p class="item"><select name="QuantityBurger3">
-                <option value="0">0</option>
-                <option value="1">1</option>
-                <option value="2">2</option>
-                <option value="3">3</option>
-                <option value="4">4</option>
-            </select>
-           Say It Ain\'t Cilantro Burger</p>
-           <p class="desc">(comes with cilantro)</p>
-            <label>
-                Extras (+$0.25/ea):<br />
-                <input type="checkbox" name="ExtrasBurger3[]" value="Bacon" /> Bacon<br />
-                <input type="checkbox" name="ExtrasBurger3[]" value="Onions" /> Onions<br />
-                <input type="checkbox" name="ExtrasBurger3[]" value="Avocado" /> Avocado<br />
-            </label>            
-            <input type="submit" name="Submit" value="ORDER" />
-        </form>
-    ';
+    echo '<div>
+        <img src="logo.png">
+    </div>';
 }
-
-class Item
-{
-    //initialize values
-    public $Quantity = 0;
-    public $Name = '';
-    public $Description = '';
-    public $Price = 0;
-    public $Extras = array();
-
-    //constructor function
-    public function __construct($Quantity, $Name, $Description, $Price)
-    {
-        $this->Quantity = $Quantity;
-        $this->Name = $Name;
-        $this->Description = $Description;
-        $this->Price = $Price;
-    } //end constructor function
-
-    //add extras function
-    public function addExtra($extra)
-    {
-        $this->Extras[] = $extra;
-    } //end add extras function
-
-    //show extras function
-    public function showExtras()
-    {
-        return implode(', ', $this->Extras);
-    } //end show extras function
-
-    //calculate cost of extras
-    public function calcExtras()
-    {
-        $extrasCount = count($this->Extras);
-        $extrasCost = number_format(($extrasCount * .25), 2);
-        return $extrasCost;
-    } //end calculate extras function
-
-    //calculate cost of base item
-    public function calcItem($countItem, $costItem)
-    {
-        $itemCost = number_format(($countItem * $costItem), 2);
-        return $itemCost;
-    } //end calculate base items function
-}
-
-include 'footer.php';
+?>
