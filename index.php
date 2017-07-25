@@ -107,14 +107,17 @@ function showForm($items, $extras)
  * @param array $extras
  */
 function showData($items, $extras)
-{
+{#form submits here we show entered name
+	global $subtotal;
     // Process menu items for form
     
     //DEBUG echo '<pre>';
     //DEBUG var_dump($_POST);
     //DEBUG echo '</pre>';
     //DEBUG die;
-
+    
+    // get_header(); #defaults to footer_inc.php
+        
     //table header
     echo '        <table>
         <thead>
@@ -177,10 +180,12 @@ function showData($items, $extras)
     // write link back to form
     echo '<tr><td></td><td class="center">';
     if($subtotal > 0) { //show confirmation if values submitted
-        echo '<a href="'. THIS_PAGE . '">Place another Order</a>';
+        $returnText = 'Place another Order';
     }else{
-        echo '<a href="'. THIS_PAGE . '">Please Try Again!</a>';       
+        $returnText = 'Please Try Again!';
     }
+    echo '<a href="'. THIS_PAGE . '"><button type="button">'. $returnText . '</button></a>';       
+    
     echo '</td><td></td></tr>';
     
     //table footer
