@@ -87,8 +87,13 @@ class Item
 {
     public $ID = 0;
     public $Name = '';
+<<<<<<< HEAD
     public $Price = 0;
     public $Description = '';
+=======
+    public $Description = '';
+    public $Price = 0;
+>>>>>>> e8375425a776863c63a724b14601fe6a4777ca0d
     public $Extras = array();
     
     public function __construct($ID,$Name,$Description,$Price)
